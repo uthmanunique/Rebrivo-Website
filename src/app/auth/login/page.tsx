@@ -64,7 +64,7 @@ function SigninContent() {
 
         setTimeout(() => {
           if (role === "seller") {
-            window.location.href = `http://seller-dashboard-three.vercel.app`; // Dynamic redirect
+            window.location.href = `http://rebrivo-seller.vercel.app`; // Dynamic redirect
           } else {
             router.push("/dashboard");
           }

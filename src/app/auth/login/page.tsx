@@ -65,7 +65,7 @@ function SigninContent() {
         setTimeout(() => {
           if (role === "seller") {
             // window.location.href = `http://localhost:3001`; // localhost URL for testing
-            window.location.href = `https://seller-dashboard-three.vercel.app`; // production URL
+            window.location.href = `https://rebrivo-seller.vercel.app`; // production URL
 
           } else {
             router.push("/dashboard");

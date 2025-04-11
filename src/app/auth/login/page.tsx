@@ -66,6 +66,7 @@ function SigninContent() {
           if (role === "seller") {
             // window.location.href = `http://localhost:3001`; // Dynamic redirect
             window.location.href = `https://seller-dashboard-three.vercel.app`; 
+
           } else {
             router.push("/dashboard");
           }

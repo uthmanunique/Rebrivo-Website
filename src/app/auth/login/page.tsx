@@ -82,13 +82,32 @@ function SigninContent() {
 
         setTimeout(() => {
           if (role === "seller") {
-            // window.location.href = `http://localhost:3001`; // Seller dashboard
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
-            // router.push("https://rebrivo-seller-dashboard.netlify.app");
+            // Encode the token and basic user info in the URL
+            const authParams = new URLSearchParams({
+              token: data.accessToken,
+              refreshToken: data.refreshToken,
+              userData: JSON.stringify(data.seller)
+            }).toString();
+            
+            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?${authParams}`;
           } else {
-            // window.location.href = `http://localhost:8000`; // Buyer dashboard
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
-            // router.push("https://rebrivo-buyer-dashboard.netlify.app");
+            const authParams = new URLSearchParams({
+              token: data.accessToken,
+              refreshToken: data.refreshToken,
+              userData: JSON.stringify(data.buyer)
+            }).toString();
+            
+            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth?${authParams}`; // Production
+
+        // setTimeout(() => {
+        //   if (role === "seller") {
+        //     // window.location.href = `http://localhost:3001`; // Seller dashboard
+        //     window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
+        //     // router.push("https://rebrivo-seller-dashboard.netlify.app");
+        //   } else {
+        //     // window.location.href = `http://localhost:8000`; // Buyer dashboard
+        //     window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
+        //     // router.push("https://rebrivo-buyer-dashboard.netlify.app");
           }
         }, 2000);
       } else {

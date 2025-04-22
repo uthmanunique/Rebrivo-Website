@@ -47,13 +47,15 @@ function SigninContent() {
         Cookies.set("accessToken", data.accessToken, {
           expires: 1,
           path: "/",
-          secure: false, // Set to true in production
+          // secure: false, // Set to false in local
+          secure: true, // Set to true in production
           sameSite: "lax",
         });
         Cookies.set("refreshToken", data.refreshToken, {
           expires: 7,
           path: "/",
-          secure: false,
+          // secure: false, // Set to false in local
+          secure: true, // Set to true in production
           sameSite: "lax",
         });
         Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
@@ -82,10 +84,12 @@ function SigninContent() {
         setTimeout(() => {
           if (role === "seller") {
             // window.location.href = `http://localhost:3001`; // Seller dashboard
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
+            // window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
+            router.push("https://rebrivo-seller-dashboard.netlify.app");
           } else {
             // window.location.href = `http://localhost:8000`; // Buyer dashboard
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
+            // window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
+            router.push("https://rebrivo-buyer-dashboard.netlify.app");
           }
         }, 2000);
       } else {

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "react-toastify";
@@ -9,7 +9,6 @@ import Loader from "@/app/components/Loader";
 import Cookies from "js-cookie";
 
 function SigninContent() {
-  // const router = useRouter();
   const searchParams = useSearchParams();
   const role = searchParams.get("role")?.toLowerCase() || "buyer";
   const [email, setEmail] = useState("");
@@ -61,7 +60,7 @@ function SigninContent() {
         Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
           expires: 1,
           path: "/",
-          secure: false,
+          secure: true,
           sameSite: "lax",
         });
 
@@ -69,14 +68,14 @@ function SigninContent() {
           Cookies.set("buyerData", JSON.stringify(data.buyer), {
             expires: 1,
             path: "/",
-            secure: false,
+            secure: true,
             sameSite: "lax",
           });
         } else {
           Cookies.set("sellerData", JSON.stringify(data.seller), {
             expires: 1,
             path: "/",
-            secure: false,
+            secure: true,
             sameSite: "lax",
           });
         }

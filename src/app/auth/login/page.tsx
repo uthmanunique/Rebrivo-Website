@@ -81,11 +81,11 @@ function SigninContent() {
 
         setTimeout(() => {
           if (role === "seller") {
-            window.location.href = `http://localhost:3001`; // Seller dashboard
-            // window.location.href = `https://rebrivo-seller.vercel.app`; // Production
+            // window.location.href = `http://localhost:3001`; // Seller dashboard
+            window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
           } else {
-            window.location.href = `http://localhost:8000`; // Buyer dashboard
-            // window.location.href = `https://rebrivo-buyer.vercel.app`; // Production
+            // window.location.href = `http://localhost:8000`; // Buyer dashboard
+            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
           }
         }, 2000);
       } else {

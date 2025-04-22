@@ -9,7 +9,7 @@ import Loader from "@/app/components/Loader";
 import Cookies from "js-cookie";
 
 function SigninContent() {
-  const router = useRouter();
+  // const router = useRouter();
   const searchParams = useSearchParams();
   const role = searchParams.get("role")?.toLowerCase() || "buyer";
   const [email, setEmail] = useState("");
@@ -84,12 +84,12 @@ function SigninContent() {
         setTimeout(() => {
           if (role === "seller") {
             // window.location.href = `http://localhost:3001`; // Seller dashboard
-            // window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
-            router.push("https://rebrivo-seller-dashboard.netlify.app");
+            window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
+            // router.push("https://rebrivo-seller-dashboard.netlify.app");
           } else {
             // window.location.href = `http://localhost:8000`; // Buyer dashboard
-            // window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
-            router.push("https://rebrivo-buyer-dashboard.netlify.app");
+            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
+            // router.push("https://rebrivo-buyer-dashboard.netlify.app");
           }
         }, 2000);
       } else {

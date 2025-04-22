@@ -202,6 +202,8 @@
 //   );
 // }
 
+
+
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -209,7 +211,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { API_BASE_URL } from "@/config/api";
-import { getRedirectUrl } from "@/config/env";
 import Loader from "@/app/components/Loader";
 import Cookies from "js-cookie";
 
@@ -297,9 +298,18 @@ function SigninContent() {
             sameSite: "strict",
           });
         }
-
-        const redirectUrl = getRedirectUrl(role);
-        window.location.href = redirectUrl;
+        
+        // setTimeout(() => { //No need of timeout
+          if (role === "seller") {
+            // window.location.href = `http://localhost:3001`; // Seller dashboard
+            window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
+            // router.push("https://rebrivo-seller-dashboard.netlify.app");
+          } else {
+            // window.location.href = `http://localhost:8000`; // Buyer dashboard
+            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
+            // router.push("https://rebrivo-buyer-dashboard.netlify.app");
+          }
+        // }, 2000);
       } else {
         const errorMessage = data.message || "Invalid email or password. Please try again.";
         toast.error(errorMessage, { position: "top-right", autoClose: 3000 });

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { API_BASE_URL } from "@/config/api";
 import Loader from "@/app/components/Loader";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
 function SigninContent() {
   const router = useRouter();
@@ -38,37 +38,54 @@ function SigninContent() {
       });
 
       const data = await response.json();
-      console.log('Rebrivo Login - API Response:', JSON.stringify(data, null, 2));
+      console.log("Login Response:", data); // Debug response
 
       if (response.ok) {
         toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
 
-        console.log('Rebrivo Login - Cookies before setting:', {
-          accessToken: Cookies.get('accessToken'),
-          refreshToken: Cookies.get('refreshToken'),
-          sellerData: Cookies.get('sellerData'),
-          role: Cookies.get('role'),
+        // Set cookies
+        Cookies.set("accessToken", data.accessToken, {
+          expires: 1,
+          path: "/",
+          secure: false, // Set to true in production
+          sameSite: "lax",
+        });
+        Cookies.set("refreshToken", data.refreshToken, {
+          expires: 7,
+          path: "/",
+          secure: false,
+          sameSite: "lax",
+        });
+        Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
+          expires: 1,
+          path: "/",
+          secure: false,
+          sameSite: "lax",
         });
 
-        Cookies.set('accessToken', data.accessToken, { expires: 1, path: '/', secure: false, sameSite: 'lax' });
-        Cookies.set('refreshToken', data.refreshToken, { expires: 7, path: '/', secure: false, sameSite: 'lax' });
-        Cookies.set('sellerData', JSON.stringify(data.seller), { expires: 1, path: '/', secure: false, sameSite: 'lax' });
-        Cookies.set('role', data.seller?.role || "SELLER", { expires: 1, path: '/', secure: false, sameSite: 'lax' });
-
-        console.log('Rebrivo Login - Cookies after setting:', {
-          accessToken: Cookies.get('accessToken'),
-          refreshToken: Cookies.get('refreshToken'),
-          sellerData: Cookies.get('sellerData'),
-          role: Cookies.get('role'),
-        });
+        if (role === "buyer") {
+          Cookies.set("buyerData", JSON.stringify(data.buyer), {
+            expires: 1,
+            path: "/",
+            secure: false,
+            sameSite: "lax",
+          });
+        } else {
+          Cookies.set("sellerData", JSON.stringify(data.seller), {
+            expires: 1,
+            path: "/",
+            secure: false,
+            sameSite: "lax",
+          });
+        }
 
         setTimeout(() => {
           if (role === "seller") {
-            // window.location.href = `http://localhost:3001`; // localhost URL for testing
-            window.location.href = `https://rebrivo-seller.vercel.app`; // production URL
-
+            window.location.href = `http://localhost:3001`; // Seller dashboard
+            // window.location.href = `https://rebrivo-seller.vercel.app`; // Production
           } else {
-            router.push("/dashboard");
+            window.location.href = `http://localhost:8000`; // Buyer dashboard
+            // window.location.href = `https://rebrivo-buyer.vercel.app`; // Production
           }
         }, 2000);
       } else {
@@ -80,7 +97,7 @@ function SigninContent() {
       const genericError = "An error occurred during login. Please try again.";
       toast.error(genericError, { position: "top-right", autoClose: 3000 });
       setError(genericError);
-      console.error('Rebrivo Login - Error:', err);
+      console.error("Rebrivo Login - Error:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -89,8 +106,16 @@ function SigninContent() {
   return (
     <section className="min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('/Interest.png')" }}>
       <div className="flex min-h-screen items-center justify-center px-6 py-12 md:px-12 md:py-16">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-          <div className="text-center">
+        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg relative">
+          {/* Go to Home Link */}
+          <Link
+            href="/"
+            className="absolute top-4 left-4 flex items-center text-sm text-[#F26E52] hover:underline"
+          >
+            <Image src="/home.png" alt="Home" width={16} height={16} className="mr-1" />
+            Go to Home
+          </Link>
+          <div className="text-center mt-8">
             <h2 className="mb-2 text-2xl font-semibold text-[#011631] md:text-3xl">
               Welcome Back, {role === "buyer" ? "Buyer" : "Seller"}!
             </h2>
@@ -98,7 +123,9 @@ function SigninContent() {
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700">Email</label>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+                Email
+              </label>
               <input
                 type="email"
                 id="email"
@@ -110,7 +137,9 @@ function SigninContent() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700">Password</label>
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}

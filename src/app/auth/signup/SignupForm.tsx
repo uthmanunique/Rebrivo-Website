@@ -1,4 +1,3 @@
-// src/app/auth/signup/SignupForm.tsx
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,10 +9,18 @@ import { API_BASE_URL } from "@/config/api";
 
 // Define the payload type
 interface SignupPayload {
+  name?: string; // For buyer
+  phoneNumber?: string; // For buyer
+  acquisitionIntent?: string; // For buyer
   email: string;
   password: string;
   otp: string;
-  interests?: string[];
+  interests?: {
+    industryPreference: string[];
+    investmentRange: string;
+    location: string;
+    businessGoals: string;
+  };
 }
 
 export function SignupForm() {
@@ -21,6 +28,9 @@ export function SignupForm() {
   const searchParams = useSearchParams();
   const role = searchParams.get("role")?.toUpperCase() || "BUYER";
 
+  const [name, setName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [acquisitionIntent, setAcquisitionIntent] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,13 +44,10 @@ export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedSales, setSelectedSales] = useState<string[]>([]);
+  const [investmentRange, setInvestmentRange] = useState("");
+  const [location, setLocation] = useState("");
+  const [businessGoals, setBusinessGoals] = useState("");
   const [isIndustryOpen, setIsIndustryOpen] = useState(false);
-  const [isStatusOpen, setIsStatusOpen] = useState(false);
-  const [isSizeOpen, setIsSizeOpen] = useState(false);
-  const [isSaleOpen, setIsSaleOpen] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
   const industries = [
@@ -66,21 +73,32 @@ export function SignupForm() {
     "Other (Specify)",
   ];
 
-  const businessStatuses = ["Dormant Companies", "Struggling Companies", "Thriving Companies"];
-
-  const businessSizes = [
-    "Small Businesses (Annual Revenue: Below ₦10M)",
-    "Medium-Sized Businesses (Annual Revenue: ₦10M – ₦100M)",
-    "Large Enterprises (Annual Revenue: ₦100M – ₦500M)",
-    "High-Value Businesses (Annual Revenue: ₦500M+)",
+  const investmentRanges = [
+    "Below ₦10M",
+    "₦10M - ₦50M",
+    "₦50M - ₦100M",
+    "₦100M - ₦200M",
+    "₦200M - ₦500M",
+    "₦500M+",
   ];
 
-  const specialSales = [
-    "Equity Sale (Partial Ownership Transfer)",
-    "Seller Financing Available",
-    "Distressed Sales (Urgent Liquidation)",
-    "Franchises for Sale",
+  const locations = [
+    "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+    "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT", "Gombe", "Imo",
+    "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa",
+    "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba",
+    "Yobe", "Zamfara",
   ];
+
+  const businessGoalsOptions = [
+    "Growing Annual Revenue",
+    "Acquiring Market Share",
+    "Turnaround Opportunity",
+    "Long-Term Investment",
+    "Diversifying Portfolio",
+  ];
+
+  const acquisitionIntents = ["Personal", "Representing a Third Party"];
 
   // Password strength logic
   const getPasswordStrength = (password: string) => {
@@ -112,21 +130,27 @@ export function SignupForm() {
       otp.trim() !== "" &&
       termsAccepted &&
       (role !== "BUYER" ||
-        (selectedIndustries.length > 0 &&
-         selectedStatuses.length > 0 &&
-         selectedSizes.length > 0 &&
-         selectedSales.length > 0));
+        (name.trim() !== "" &&
+         phoneNumber.trim() !== "" &&
+         acquisitionIntent !== "" &&
+         selectedIndustries.length > 0 &&
+         investmentRange !== "" &&
+         location !== "" &&
+         businessGoals !== ""));
     setIsFormValid(isValid);
   }, [
+    name,
+    phoneNumber,
+    acquisitionIntent,
     email,
     password,
     confirmPassword,
     otp,
     termsAccepted,
     selectedIndustries,
-    selectedStatuses,
-    selectedSizes,
-    selectedSales,
+    investmentRange,
+    location,
+    businessGoals,
     role,
   ]);
 
@@ -181,14 +205,28 @@ export function SignupForm() {
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       setIsSubmitting(false);
+      toast.error("Passwords do not match", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       return;
     }
 
     try {
       const payload: SignupPayload = { email, password, otp };
       if (role === "BUYER") {
-        payload.interests = [...selectedIndustries, ...selectedStatuses, ...selectedSizes, ...selectedSales];
+        payload.name = name;
+        payload.phoneNumber = phoneNumber;
+        payload.acquisitionIntent = acquisitionIntent;
+        payload.interests = {
+          industryPreference: selectedIndustries,
+          investmentRange,
+          location,
+          businessGoals,
+        };
       }
+
+      console.log("Signup Payload:", payload); // Debug payload
 
       const response = await fetch(`${API_BASE_URL}/auth/${role.toLowerCase()}/sign-up`, {
         method: "POST",
@@ -197,6 +235,8 @@ export function SignupForm() {
       });
 
       const data = await response.json();
+      console.log("Signup Response:", data); // Debug response
+
       if (response.ok) {
         toast.success(`${role === "BUYER" ? "Buyer" : "Seller"} registered successfully!`, {
           position: "top-right",
@@ -212,7 +252,8 @@ export function SignupForm() {
           autoClose: 3000,
         });
       }
-    } catch {
+    } catch (err) {
+      console.error("Signup Error:", err);
       setError("An error occurred during signup");
       toast.error("An error occurred during signup", {
         position: "top-right",
@@ -224,23 +265,11 @@ export function SignupForm() {
   };
 
   const industryRef = useRef<HTMLDivElement>(null);
-  const statusRef = useRef<HTMLDivElement>(null);
-  const sizeRef = useRef<HTMLDivElement>(null);
-  const saleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (industryRef.current && !industryRef.current.contains(event.target as Node)) {
         setIsIndustryOpen(false);
-      }
-      if (statusRef.current && !statusRef.current.contains(event.target as Node)) {
-        setIsStatusOpen(false);
-      }
-      if (sizeRef.current && !sizeRef.current.contains(event.target as Node)) {
-        setIsSizeOpen(false);
-      }
-      if (saleRef.current && !saleRef.current.contains(event.target as Node)) {
-        setIsSaleOpen(false);
       }
     };
 
@@ -259,6 +288,59 @@ export function SignupForm() {
         Sign up to explore opportunities to buy & sell any kind of business and assets securely.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {role === "BUYER" && (
+          <>
+            <div>
+              <label htmlFor="name" className="block text-sm font-semibold text-gray-700">
+                Full Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full h-12 px-4 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52]"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="phoneNumber" className="block text-sm font-semibold text-gray-700">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                id="phoneNumber"
+                placeholder="Enter your phone number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="w-full h-12 px-4 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52]"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="acquisitionIntent" className="block text-sm font-semibold text-gray-700">
+                Acquisition Intent
+              </label>
+              <select
+                id="acquisitionIntent"
+                value={acquisitionIntent}
+                onChange={(e) => setAcquisitionIntent(e.target.value)}
+                className="w-full h-12 px-4 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52]"
+                required
+              >
+                <option value="" disabled>
+                  Select intent
+                </option>
+                {acquisitionIntents.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
         <div>
           <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
             Email
@@ -369,15 +451,71 @@ export function SignupForm() {
           <>
             <div className="text-center">
               <h3 className="mb-2 text-lg font-semibold text-[#011631] md:text-xl">
-                Select What Interests You
+                Select Your Acquisition Preferences
               </h3>
               <p className="mb-4 text-xs text-[#414141] md:text-sm">
-                Choose the business category you are interested in. This will enable you to see relevant listings.
+                Choose preferences to see relevant business listings.
               </p>
             </div>
+
+            {/* <div ref={industryRef}>
+            <label className="block text-sm font-semibold text-gray-700">Business Categories <span className="text-red-600">*</span></label>
+            <div className="relative">
+              <div
+                onClick={() => setIsIndustryOpen(!isIndustryOpen)}
+                className="w-full min-h-[40px] px-4 py-2 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52] flex flex-wrap gap-2 items-center cursor-pointer"
+              >
+                {formData.businessCategoryTypes.length > 0 ? (
+                  formData.businessCategoryTypes.map((category) => (
+                    <span key={category} className="bg-[#F26E52] text-white px-2 py-1 rounded text-xs flex items-center">
+                      {category}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFormData({
+                            ...formData,
+                            businessCategoryTypes: formData.businessCategoryTypes.filter((c) => c !== category),
+                          });
+                        }}
+                        className="ml-1 text-white"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-400">Select categories...</span>
+                )}
+              </div>
+              {isIndustryOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white border text-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {industries.map((option) => (
+                    <label key={option} className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.businessCategoryTypes.includes(option)}
+                        onChange={() => {
+                          setFormData({
+                            ...formData,
+                            businessCategoryTypes: formData.businessCategoryTypes.includes(option)
+                              ? formData.businessCategoryTypes.filter((c) => c !== option)
+                              : [...formData.businessCategoryTypes, option],
+                          });
+                        }}
+                        className="mr-2 accent-[#F26E52]"
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div> */}
+
             <div ref={industryRef}>
               <label className="block text-sm font-semibold text-gray-700">
-                Select Industry and Sector
+                Industry and Sector
               </label>
               <div className="relative">
                 <div
@@ -397,7 +535,7 @@ export function SignupForm() {
                             e.stopPropagation();
                             handleMultiSelect(industry, selectedIndustries, setSelectedIndustries);
                           }}
-                          className="ml-1 text-gray-700"
+                          className="ml-1 text-white"
                         >
                           ×
                         </button>
@@ -427,161 +565,68 @@ export function SignupForm() {
                 )}
               </div>
             </div>
-            <div ref={statusRef}>
-              <label className="block text-sm font-semibold text-gray-700">
-                Select Business Status
+            <div>
+              <label htmlFor="investmentRange" className="block text-sm font-semibold text-gray-700">
+                Investment Range
               </label>
-              <div className="relative">
-                <div
-                  onClick={() => setIsStatusOpen(!isStatusOpen)}
-                  className="w-full min-h-[48px] px-4 py-2 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52] flex flex-wrap gap-2 items-center cursor-pointer"
-                >
-                  {selectedStatuses.length > 0 ? (
-                    selectedStatuses.map((status) => (
-                      <span
-                        key={status}
-                        className="bg-[#F26E52] text-white px-2 py-1 rounded text-xs flex items-center"
-                      >
-                        {status}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMultiSelect(status, selectedStatuses, setSelectedStatuses);
-                          }}
-                          className="ml-1 text-white"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-400">Select statuses...</span>
-                  )}
-                </div>
-                {isStatusOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border text-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {businessStatuses.map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedStatuses.includes(option)}
-                          onChange={() => handleMultiSelect(option, selectedStatuses, setSelectedStatuses)}
-                          className="mr-2 accent-[#F26E52]"
-                        />
-                        {option}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <select
+                id="investmentRange"
+                value={investmentRange}
+                onChange={(e) => setInvestmentRange(e.target.value)}
+                className="w-full h-12 px-4 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52]"
+                required
+              >
+                <option value="" disabled>
+                  Select range
+                </option>
+                {investmentRanges.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div ref={sizeRef}>
-              <label className="block text-sm font-semibold text-gray-700">
-                Select Business Size and Revenue
+            <div>
+              <label htmlFor="location" className="block text-sm font-semibold text-gray-700">
+                Location Preference
               </label>
-              <div className="relative">
-                <div
-                  onClick={() => setIsSizeOpen(!isSizeOpen)}
-                  className="w-full min-h-[48px] px-4 py-2 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52] flex flex-wrap gap-2 items-center cursor-pointer"
-                >
-                  {selectedSizes.length > 0 ? (
-                    selectedSizes.map((size) => (
-                      <span
-                        key={size}
-                        className="bg-[#F26E52] text-white px-2 py-1 rounded text-xs flex items-center"
-                      >
-                        {size}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMultiSelect(size, selectedSizes, setSelectedSizes);
-                          }}
-                          className="ml-1 text-white"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-400">Select sizes...</span>
-                  )}
-                </div>
-                {isSizeOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border text-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {businessSizes.map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedSizes.includes(option)}
-                          onChange={() => handleMultiSelect(option, selectedSizes, setSelectedSizes)}
-                          className="mr-2 accent-[#F26E52]"
-                        />
-                        {option}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <select
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full h-12 px-4 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52]"
+                required
+              >
+                <option value="" disabled>
+                  Select location
+                </option>
+                {locations.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div ref={saleRef}>
-              <label className="block text-sm font-semibold text-gray-700">
-                Select Special Business Sale Option
+            <div>
+              <label htmlFor="businessGoals" className="block text-sm font-semibold text-gray-700">
+                Business Goals
               </label>
-              <div className="relative">
-                <div
-                  onClick={() => setIsSaleOpen(!isSaleOpen)}
-                  className="w-full min-h-[48px] px-4 py-2 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52] flex flex-wrap gap-2 items-center cursor-pointer"
-                >
-                  {selectedSales.length > 0 ? (
-                    selectedSales.map((sale) => (
-                      <span
-                        key={sale}
-                        className="bg-[#F26E52] text-white px-2 py-1 rounded text-xs flex items-center"
-                      >
-                        {sale}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMultiSelect(sale, selectedSales, setSelectedSales);
-                          }}
-                          className="ml-1 text-white"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-400">Select sales options...</span>
-                  )}
-                </div>
-                {isSaleOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border text-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {specialSales.map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedSales.includes(option)}
-                          onChange={() => handleMultiSelect(option, selectedSales, setSelectedSales)}
-                          className="mr-2 accent-[#F26E52]"
-                        />
-                        {option}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <select
+                id="businessGoals"
+                value={businessGoals}
+                onChange={(e) => setBusinessGoals(e.target.value)}
+                className="w-full h-12 px-4 border text-gray-600 rounded-lg focus:outline-none focus:border-[#F26E52]"
+                required
+              >
+                <option value="" disabled>
+                  Select goal
+                </option>
+                {businessGoalsOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
           </>
         )}

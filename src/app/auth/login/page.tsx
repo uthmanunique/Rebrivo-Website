@@ -23,7 +23,7 @@ function SigninContent() {
     setIsFormValid(isValid);
   }, [email, password]);
 
-  // login/page.tsx
+// login/page.tsx
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setError("");
@@ -43,7 +43,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     if (response.ok) {
       toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
 
-      // Set cookies (unchanged)
+      // Set cookies for the website domain (optional, for website-specific features)
       Cookies.set("accessToken", data.accessToken, {
         expires: 1,
         path: "/",
@@ -80,9 +80,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       }
 
       setTimeout(() => {
-        // Simplified redirect without query parameters
         if (role === "seller") {
-          window.location.href = `https://rebrivo-seller-dashboard.netlify.app/dashboard`;
+          // Pass only a temporary code (or accessToken) to the dashboard
+          const tempCode = data.accessToken; // Ideally, generate a short-lived code server-side
+          window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?code=${encodeURIComponent(tempCode)}`;
         } else {
           window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/dashboard`;
         }

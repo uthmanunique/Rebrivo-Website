@@ -7,7 +7,6 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
 
-// Use the exact backend URL from Postman
 const API_BASE_URL = "https://api-rebrivo.onrender.com/v1/api";
 
 interface LoginResponse {
@@ -55,17 +54,21 @@ function SigninContent() {
     try {
       const endpoint = role === "buyer" ? "buyer" : "seller";
       const url = `${API_BASE_URL}/auth/${endpoint}/login`;
-      console.log("Sending request to:", url, { email, password }); // Log request details
+      console.log("Sending request to:", url, { email, password });
 
       response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json", // Match /newsletters/subscribe
+        },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // Ensure cookies are sent if needed
+        mode: "cors", // Explicitly set CORS mode
+        credentials: "omit", // Match Postman (no cookies needed for login)
       });
 
       const data: LoginResponse = await response.json();
-      console.log("Login Response:", JSON.stringify(data, null, 2)); // Log full response
+      console.log("Login Response:", JSON.stringify(data, null, 2));
 
       if (response.ok) {
         toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
@@ -155,7 +158,7 @@ function SigninContent() {
             setError("Failed to set cookies. Please try again.");
             setIsSubmitting(false);
           }
-        }, 1000);
+        }, 500); // Reduced delay to minimize timing issues
       } else {
         const errorMessage = data.message || "Invalid email or password. Please try again.";
         toast.error(errorMessage, { position: "top-right", autoClose: 3000 });

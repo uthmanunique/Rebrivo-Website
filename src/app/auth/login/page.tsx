@@ -7,10 +7,9 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
 
-// Assuming API_BASE_URL is defined in a config file
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.rebrivo.com";
+// Use the exact backend URL from Postman
+const API_BASE_URL = "https://api-rebrivo.onrender.com/v1/api";
 
-// Define types for the login response
 interface LoginResponse {
   accessToken: string;
   refreshToken: string;
@@ -19,7 +18,7 @@ interface LoginResponse {
     firstName?: string;
     lastName?: string;
     email: string;
-    [key: string]: unknown; // Changed from any to unknown
+    [key: string]: unknown;
   };
   seller?: {
     id: string;
@@ -27,7 +26,7 @@ interface LoginResponse {
     lastName?: string;
     email: string;
     walletCreated?: boolean;
-    [key: string]: unknown; // Changed from any to unknown
+    [key: string]: unknown;
   };
   message?: string;
 }
@@ -52,13 +51,17 @@ function SigninContent() {
     setError("");
     setIsSubmitting(true);
 
-    let response: Response | undefined; // Declare response outside try block
+    let response: Response | undefined;
     try {
       const endpoint = role === "buyer" ? "buyer" : "seller";
-      response = await fetch(`${API_BASE_URL}/auth/${endpoint}/login`, {
+      const url = `${API_BASE_URL}/auth/${endpoint}/login`;
+      console.log("Sending request to:", url, { email, password }); // Log request details
+
+      response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensure cookies are sent if needed
       });
 
       const data: LoginResponse = await response.json();
@@ -159,7 +162,11 @@ function SigninContent() {
         setError(errorMessage);
       }
     } catch (err) {
-      console.error("Login Error:", err);
+      console.error("Login Error Details:", {
+        error: err,
+        message: err instanceof Error ? err.message : "Unknown error",
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       const genericError = "An error occurred during login. Please try again.";
       toast.error(genericError, { position: "top-right", autoClose: 3000 });
       setError(genericError);

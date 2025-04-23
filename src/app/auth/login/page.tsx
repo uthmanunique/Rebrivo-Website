@@ -23,105 +23,113 @@ function SigninContent() {
     setIsFormValid(isValid);
   }, [email, password]);
 
-// 1. FIRST FIX: SigninContent.jsx (login page)
-// Remove duplicate cookie setting by restructuring the login success handler
-
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError("");
-  setIsSubmitting(true);
-
-  try {
-    const endpoint = role === "buyer" ? "buyer" : "seller";
-    const response = await fetch(`${API_BASE_URL}/auth/${endpoint}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-    console.log("Login Response:", data); // Debug response
-
-    if (response.ok) {
-      toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
-
-      // IMPORTANT: Set cookies only once
-      // Use more specific domain settings - match your actual domain setup
-      const cookieDomain = window.location.hostname.includes('localhost') 
-        ? undefined // No domain for localhost
-        : window.location.hostname.includes('netlify.app') 
-          ? '.netlify.app' // For netlify domains
-          : undefined; // Default to current domain only
-      
-      const cookieSecure = window.location.protocol === 'https:';
-      
-      // Set common cookies
-      Cookies.set("accessToken", data.accessToken, {
-        expires: 1, // 1 day
-        path: "/",
-        secure: cookieSecure,
-        sameSite: "lax",
-        domain: cookieDomain
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+  
+    try {
+      const endpoint = role === "buyer" ? "buyer" : "seller";
+      const response = await fetch(`${API_BASE_URL}/auth/${endpoint}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // Important for cookies
       });
-      
-      Cookies.set("refreshToken", data.refreshToken, {
-        expires: 7, // 7 days
-        path: "/",
-        secure: cookieSecure,
-        sameSite: "lax",
-        domain: cookieDomain
-      });
-      
-      Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
-        expires: 1,
-        path: "/",
-        secure: cookieSecure,
-        sameSite: "lax",
-        domain: cookieDomain
-      });
-      
-      // Set role-specific data
-      if (role === "buyer") {
-        Cookies.set("buyerData", JSON.stringify(data.buyer), {
-          expires: 1,
+  
+      const data = await response.json();
+      console.log("Login Response:", data); // Debug response
+  
+      if (response.ok) {
+        toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
+  
+        // IMPROVED: Set cookies with consistent domain handling
+        const cookieDomain = window.location.hostname === 'localhost' 
+          ? undefined // No domain for localhost
+          : window.location.hostname.includes('netlify.app') 
+            ? '.netlify.app' // For netlify domains
+            : undefined; // Default to current domain only
+        
+        const cookieSecure = window.location.protocol === 'https:';
+        const cookieOptions = {
+          expires: 1, // 1 day
           path: "/",
           secure: cookieSecure,
-          sameSite: "lax",
+          sameSite: "lax" as const, 
           domain: cookieDomain
+        };
+        
+        // Set common cookies with consistent options
+        Cookies.set("accessToken", data.accessToken, {
+          ...cookieOptions,
+          expires: 1/24 // 1 hour
         });
         
-        // Redirect after successful cookie setting
-        setTimeout(() => {
-          window.location.href = "https://rebrivo-buyer-dashboard.netlify.app";
-        }, 2000);
+        Cookies.set("refreshToken", data.refreshToken, {
+          ...cookieOptions,
+          expires: 7 // 7 days
+        });
+        
+        Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", cookieOptions);
+        
+        // Set role-specific data
+        if (role === "buyer") {
+          Cookies.set("buyerData", JSON.stringify(data.buyer), cookieOptions);
+          
+          // Verify cookies and THEN redirect
+          const verifyToken = Cookies.get("accessToken");
+          const verifyRole = Cookies.get("role");
+          console.log("Verifying cookies before redirect:", { 
+            accessToken: !!verifyToken, 
+            role: verifyRole 
+          });
+          
+          // Only redirect if cookies are set
+          if (verifyToken && verifyRole === "BUYER") {
+            setTimeout(() => {
+              window.location.href = "https://rebrivo-buyer-dashboard.netlify.app";
+            }, 1000);
+          } else {
+            // Handle cookie setting failure
+            toast.error("Authentication error: Failed to set cookies", { position: "top-right", autoClose: 3000 });
+            setError("Authentication error: Failed to set cookies");
+          }
+        } else {
+          Cookies.set("sellerData", JSON.stringify(data.seller), cookieOptions);
+          
+          // Verify cookies and THEN redirect
+          const verifyToken = Cookies.get("accessToken");
+          const verifyRole = Cookies.get("role");
+          console.log("Verifying cookies before redirect:", { 
+            accessToken: !!verifyToken, 
+            role: verifyRole 
+          });
+          
+          // Only redirect if cookies are set
+          if (verifyToken && verifyRole === "SELLER") {
+            setTimeout(() => {
+              window.location.href = "https://rebrivo-seller-dashboard.netlify.app";
+            }, 1000);
+          } else {
+            // Handle cookie setting failure
+            toast.error("Authentication error: Failed to set cookies", { position: "top-right", autoClose: 3000 });
+            setError("Authentication error: Failed to set cookies");
+          }
+        }
       } else {
-        Cookies.set("sellerData", JSON.stringify(data.seller), {
-          expires: 1,
-          path: "/",
-          secure: cookieSecure,
-          sameSite: "lax",
-          domain: cookieDomain
-        });
-        
-        // Redirect after successful cookie setting
-        setTimeout(() => {
-          window.location.href = "https://rebrivo-seller-dashboard.netlify.app";
-        }, 2000);
+        const errorMessage = data.message || "Invalid email or password. Please try again.";
+        toast.error(errorMessage, { position: "top-right", autoClose: 3000 });
+        setError(errorMessage);
       }
-    } else {
-      const errorMessage = data.message || "Invalid email or password. Please try again.";
-      toast.error(errorMessage, { position: "top-right", autoClose: 3000 });
-      setError(errorMessage);
+    } catch (err) {
+      const genericError = "An error occurred during login. Please try again.";
+      toast.error(genericError, { position: "top-right", autoClose: 3000 });
+      setError(genericError);
+      console.error("Rebrivo Login - Error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (err) {
-    const genericError = "An error occurred during login. Please try again.";
-    toast.error(genericError, { position: "top-right", autoClose: 3000 });
-    setError(genericError);
-    console.error("Rebrivo Login - Error:", err);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <section className="min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('/Interest.png')" }}>

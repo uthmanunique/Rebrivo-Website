@@ -94,7 +94,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               : "https://rebrivo-seller-dashboard.netlify.app";
             window.location.href = redirectUrl;
           }
-        } catch (err) {
+        } catch {
           toast.error("Authentication error: Failed to set cookies", { position: "top-right", autoClose: 3000 });
           setError("Failed to set cookies. Please try again.");
           setIsSubmitting(false);

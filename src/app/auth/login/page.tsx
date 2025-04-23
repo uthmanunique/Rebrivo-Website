@@ -1,4 +1,3 @@
-// login/page.tsx
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -43,17 +42,19 @@ function SigninContent() {
       if (response.ok) {
         toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
 
-        // Set cookies for website domain
+        // Set cookies
         Cookies.set("accessToken", data.accessToken, {
           expires: 1,
           path: "/",
-          secure: true,
+          // secure: false, // Set to false in local
+          secure: true, // Set to true in production
           sameSite: "lax",
         });
         Cookies.set("refreshToken", data.refreshToken, {
           expires: 7,
           path: "/",
-          secure: true,
+          // secure: false, // Set to false in local
+          secure: true, // Set to true in production
           sameSite: "lax",
         });
         Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
@@ -78,15 +79,86 @@ function SigninContent() {
             sameSite: "lax",
           });
         }
-
         setTimeout(() => {
           if (role === "seller") {
-            // Pass only accessToken as code
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?code=${encodeURIComponent(data.accessToken)}`;
+            // Set cookies for seller
+            Cookies.set("accessToken", data.accessToken, {
+              expires: 1, // 1 day
+              path: "/",
+              secure: true, // Use true in production
+              sameSite: "lax",
+            });
+            Cookies.set("refreshToken", data.refreshToken, {
+              expires: 7, // 7 days
+              path: "/",
+              secure: true,
+              sameSite: "lax",
+            });
+            Cookies.set("sellerData", JSON.stringify(data.seller), {
+              expires: 1,
+              path: "/",
+              secure: true,
+              sameSite: "lax",
+            });
+        
+            // Redirect to the seller dashboard without tokens in the URL
+            window.location.href = "https://rebrivo-seller-dashboard.netlify.app";
           } else {
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/dashboard`;
+            // Set cookies for buyer
+            Cookies.set("accessToken", data.accessToken, {
+              expires: 1,
+              path: "/",
+              secure: true,
+              sameSite: "lax",
+            });
+            Cookies.set("refreshToken", data.refreshToken, {
+              expires: 7,
+              path: "/",
+              secure: true,
+              sameSite: "lax",
+            });
+            Cookies.set("buyerData", JSON.stringify(data.buyer), {
+              expires: 1,
+              path: "/",
+              secure: true,
+              sameSite: "lax",
+            });
+        
+            // Redirect to the buyer dashboard without tokens in the URL
+            window.location.href = "https://rebrivo-buyer-dashboard.netlify.app";
           }
         }, 2000);
+
+        // setTimeout(() => {
+        //   if (role === "seller") {
+        //     // Encode the token and basic user info in the URL
+        //     const authParams = new URLSearchParams({
+        //       token: data.accessToken,
+        //       refreshToken: data.refreshToken,
+        //       userData: JSON.stringify(data.seller)
+        //     }).toString();
+            
+        //     window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?${authParams}`;
+        //   } else {
+        //     const authParams = new URLSearchParams({
+        //       token: data.accessToken,
+        //       refreshToken: data.refreshToken,
+        //       userData: JSON.stringify(data.buyer)
+        //     }).toString();
+            
+        //     window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth?${authParams}`; // Production
+
+        // // setTimeout(() => {
+        // //   if (role === "seller") {
+        // //     // window.location.href = `http://localhost:3001`; // Seller dashboard
+        // //     window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
+        // //     // router.push("https://rebrivo-seller-dashboard.netlify.app");
+        // //   } else {
+        // //     // window.location.href = `http://localhost:8000`; // Buyer dashboard
+        // //     window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
+        // //     // router.push("https://rebrivo-buyer-dashboard.netlify.app");
+        //   }
+        // }, 2000);
       } else {
         const errorMessage = data.message || "Invalid email or password. Please try again.";
         toast.error(errorMessage, { position: "top-right", autoClose: 3000 });

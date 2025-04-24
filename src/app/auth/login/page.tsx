@@ -81,26 +81,24 @@ function SigninContent() {
         }
 
         setTimeout(() => {
+          // Create authentication data object
+          const authData = {
+            token: data.accessToken,
+            refreshToken: data.refreshToken,
+            userData: role === "seller" ? data.seller : data.buyer,
+          };
+        
+          // Store in sessionStorage (data persists only for the session)
+          sessionStorage.setItem("authData", JSON.stringify(authData));
+        
+          // Redirect to the dashboard without token in URL
           if (role === "seller") {
-            // Create a one-time token for authentication that doesn't expose sensitive data
-            const authToken = btoa(JSON.stringify({
-              token: data.accessToken,
-              refreshToken: data.refreshToken,
-              userData: data.seller
-            }));
-            
-            // Use a hash fragment instead of a query parameter - hash fragments aren't sent to the server
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth#${authToken}`;
+            window.location.href = "https://rebrivo-seller-dashboard.netlify.app/auth";
           } else {
-            const authToken = btoa(JSON.stringify({
-              token: data.accessToken,
-              refreshToken: data.refreshToken,
-              userData: data.buyer
-            }));
-            
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth#${authToken}`;
+            window.location.href = "https://rebrivo-buyer-dashboard.netlify.app/auth";
           }
         }, 2000);
+        
       } else {
         const errorMessage = data.message || "Invalid email or password. Please try again.";
         toast.error(errorMessage, { position: "top-right", autoClose: 3000 });

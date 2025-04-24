@@ -23,98 +23,109 @@ function SigninContent() {
     setIsFormValid(isValid);
   }, [email, password]);
 
-  // ... existing imports and code ...
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
 
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
-  setError("");
-  setIsSubmitting(true);
-
-  try {
-    const endpoint = role === "buyer" ? "buyer" : "seller";
-    const response = await fetch(`${API_BASE_URL}/auth/${endpoint}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-    console.log("Login Response:", data); // Debug response
-
-    if (response.ok) {
-      toast.success("Login successful!", {
-        position: "top-right",
-        autoClose: 2000,
+    try {
+      const endpoint = role === "buyer" ? "buyer" : "seller";
+      const response = await fetch(`${API_BASE_URL}/auth/${endpoint}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
 
-      // Set cookies with required attributes
-      Cookies.set("accessToken", data.accessToken, {
-        expires: 1,
-        path: "/",
-        secure: true,
-        sameSite: "lax",
-      });
-      Cookies.set("refreshToken", data.refreshToken, {
-        expires: 7,
-        path: "/",
-        secure: true,
-        sameSite: "lax",
-      });
-      Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
-        expires: 1,
-        path: "/",
-        secure: true,
-        sameSite: "lax",
-      });
+      const data = await response.json();
+      console.log("Login Response:", data); // Debug response
 
-      if (role === "buyer") {
-        Cookies.set("buyerData", JSON.stringify(data.buyer), {
+      if (response.ok) {
+        toast.success("Login successful!", {
+          position: "top-right",
+          autoClose: 2000,
+        });
+
+        // Set cookies with required attributes
+        Cookies.set("accessToken", data.accessToken, {
           expires: 1,
           path: "/",
           secure: true,
           sameSite: "lax",
         });
+        Cookies.set("refreshToken", data.refreshToken, {
+          expires: 7,
+          path: "/",
+          secure: true,
+          sameSite: "lax",
+        });
+        Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
+          expires: 1,
+          path: "/",
+          secure: true,
+          sameSite: "lax",
+        });
+
+        if (role === "buyer") {
+          Cookies.set("buyerData", JSON.stringify(data.buyer), {
+            expires: 1,
+            path: "/",
+            secure: true,
+            sameSite: "lax",
+          });
+        } else {
+          Cookies.set("sellerData", JSON.stringify(data.seller), {
+            expires: 1,
+            path: "/",
+            secure: true,
+            sameSite: "lax",
+          });
+        }
+
+        // Prepare token data to send via URL hash
+        const tokenData = {
+          token: data.accessToken,
+          refreshToken: data.refreshToken,
+          userData: role === "seller" ? data.seller : data.buyer,
+        };
+
+        const encodedToken = btoa(JSON.stringify(tokenData));
+
+        // Redirect to the dashboard with the token data in the URL hash
+        setTimeout(() => {
+          window.location.href =
+            role === "seller"
+              ? `https://rebrivo-seller-dashboard.netlify.app/dashboard#${encodedToken}`
+              : `https://rebrivo-buyer-dashboard.netlify.app/dashboard#${encodedToken}`;
+          console.log("Redirecting to dashboard with token hash...");
+        }, 2000);
+
       } else {
-        Cookies.set("sellerData", JSON.stringify(data.seller), {
-          expires: 1,
-          path: "/",
-          secure: true,
-          sameSite: "lax",
+        const errorMessage =
+          data.message || "Invalid email or password. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
         });
+        setError(errorMessage);
       }
-
-      // Redirect directly to the dashboard after a delay
-      setTimeout(() => {
-        window.location.href =
-          role === "seller"
-            ? "https://rebrivo-seller-dashboard.netlify.app/dashboard"
-            : "https://rebrivo-buyer-dashboard.netlify.app/dashboard";
-        console.log("Redirecting to dashboard...");
-      }, 2000);
-    } else {
-      const errorMessage = data.message || "Invalid email or password. Please try again.";
-      toast.error(errorMessage, {
+    } catch (err) {
+      const genericError = "An error occurred during login. Please try again.";
+      toast.error(genericError, {
         position: "top-right",
         autoClose: 3000,
       });
-      setError(errorMessage);
+      setError(genericError);
+      console.error("Rebrivo Login - Error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (err) {
-    const genericError = "An error occurred during login. Please try again.";
-    toast.error(genericError, {
-      position: "top-right",
-      autoClose: 3000,
-    });
-    setError(genericError);
-    console.error("Rebrivo Login - Error:", err);
-  } finally {
-    setIsSubmitting(false);
   }
-}
-
 
   return (
-    <section className="min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('/Interest.png')" }}>
+    <section
+      className="min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: "url('/Interest.png')" }}
+    >
       <div className="flex min-h-screen items-center justify-center px-6 py-12 md:px-12 md:py-16">
         <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg relative">
           {/* Go to Home Link */}
@@ -129,11 +140,16 @@ async function handleSubmit(e: React.FormEvent) {
             <h2 className="mb-2 text-2xl font-semibold text-[#011631] md:text-3xl">
               Welcome Back, {role === "buyer" ? "Buyer" : "Seller"}!
             </h2>
-            <p className="mb-6 text-xs text-[#414141] md:text-sm">Log in to your personal dashboard.</p>
+            <p className="mb-6 text-xs text-[#414141] md:text-sm">
+              Log in to your personal dashboard.
+            </p>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-semibold text-gray-700"
+              >
                 Email
               </label>
               <input
@@ -147,7 +163,10 @@ async function handleSubmit(e: React.FormEvent) {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-semibold text-gray-700"
+              >
                 Password
               </label>
               <div className="relative">
@@ -174,7 +193,10 @@ async function handleSubmit(e: React.FormEvent) {
                 </button>
               </div>
               <div className="text-right mt-2">
-                <Link href="/auth/forgot-password" className="text-sm text-[#F26E52] hover:underline">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-[#F26E52] hover:underline"
+                >
                   Forgot Password?
                 </Link>
               </div>
@@ -190,7 +212,10 @@ async function handleSubmit(e: React.FormEvent) {
             </button>
             <p className="text-center text-sm text-[#414141]">
               Don’t have an account?{" "}
-              <Link href="/auth/role-selection?type=signup" className="text-[#F26E52] hover:underline">
+              <Link
+                href="/auth/role-selection?type=signup"
+                className="text-[#F26E52] hover:underline"
+              >
                 Create Account
               </Link>
             </p>

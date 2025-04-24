@@ -82,32 +82,23 @@ function SigninContent() {
 
         setTimeout(() => {
           if (role === "seller") {
-            // Encode the token and basic user info in the URL
-            const authParams = new URLSearchParams({
+            // Create a state object with the sensitive data instead of using URL parameters
+            const state = btoa(JSON.stringify({
               token: data.accessToken,
               refreshToken: data.refreshToken,
-              userData: JSON.stringify(data.seller)
-            }).toString();
+              userData: data.seller
+            }));
             
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?${authParams}`;
+            // Only pass a single encoded parameter that doesn't expose tokens in the URL
+            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?state=${state}`;
           } else {
-            const authParams = new URLSearchParams({
+            const state = btoa(JSON.stringify({
               token: data.accessToken,
               refreshToken: data.refreshToken,
-              userData: JSON.stringify(data.buyer)
-            }).toString();
+              userData: data.buyer
+            }));
             
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth?${authParams}`; // Production
-
-        // setTimeout(() => {
-        //   if (role === "seller") {
-        //     // window.location.href = `http://localhost:3001`; // Seller dashboard
-        //     window.location.href = `https://rebrivo-seller-dashboard.netlify.app`; // Production
-        //     // router.push("https://rebrivo-seller-dashboard.netlify.app");
-        //   } else {
-        //     // window.location.href = `http://localhost:8000`; // Buyer dashboard
-        //     window.location.href = `https://rebrivo-buyer-dashboard.netlify.app`; // Production
-        //     // router.push("https://rebrivo-buyer-dashboard.netlify.app");
+            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth?state=${state}`;
           }
         }, 2000);
       } else {

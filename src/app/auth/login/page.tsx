@@ -89,8 +89,8 @@ function SigninContent() {
               userData: data.seller
             }));
             
-            // Use a single encoded parameter
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?token=${authToken}`;
+            // Use a hash fragment instead of a query parameter - hash fragments aren't sent to the server
+            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth#${authToken}`;
           } else {
             const authToken = btoa(JSON.stringify({
               token: data.accessToken,
@@ -98,7 +98,7 @@ function SigninContent() {
               userData: data.buyer
             }));
             
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth?token=${authToken}`;
+            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth#${authToken}`;
           }
         }, 2000);
       } else {

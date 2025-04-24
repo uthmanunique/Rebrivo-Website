@@ -1,6 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "react-toastify";
@@ -8,19 +7,17 @@ import { API_BASE_URL } from "@/config/api";
 import Loader from "@/app/components/Loader";
 import Cookies from "js-cookie";
 
-function SigninContent() {
-  const searchParams = useSearchParams();
-  const role = searchParams.get("role")?.toLowerCase() || "buyer";
+export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  const role: string = "seller"; // or determine dynamically if you support buyer here
 
   useEffect(() => {
-    const isValid = email.trim() !== "" && password.trim() !== "";
-    setIsFormValid(isValid);
+    setIsFormValid(email.trim() !== "" && password.trim() !== "");
   }, [email, password]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,84 +34,105 @@ function SigninContent() {
       });
 
       const data = await response.json();
-      console.log("Login Response:", data);
-
       if (response.ok) {
         toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
 
-        // Create a one-time token
+        // build base64 auth token
         const authToken = btoa(JSON.stringify({
           token: data.accessToken,
           refreshToken: data.refreshToken,
-          userData: role === "buyer" ? data.buyer : data.seller,
+          userData: data.seller,
         }));
 
-        // Set cookies in the current domain for fallback if needed
+        // set fallback cookies
         Cookies.set("accessToken", data.accessToken, { expires: 1, path: "/", secure: true, sameSite: "lax" });
         Cookies.set("refreshToken", data.refreshToken, { expires: 7, path: "/", secure: true, sameSite: "lax" });
-        Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", { expires: 1, path: "/", secure: true, sameSite: "lax" });
+        Cookies.set("sellerData", JSON.stringify(data.seller), { expires: 1, path: "/", secure: true, sameSite: "lax" });
+        Cookies.set("role", "SELLER", { expires: 1, path: "/", secure: true, sameSite: "lax" });
 
-        if (role === "buyer") {
-          Cookies.set("buyerData", JSON.stringify(data.buyer), { expires: 1, path: "/", secure: true, sameSite: "lax" });
-        } else {
-          Cookies.set("sellerData", JSON.stringify(data.seller), { expires: 1, path: "/", secure: true, sameSite: "lax" });
-        }
-
-        // Redirect via server-side endpoint with query
-        const target =
-          role === "seller"
-            ? "https://rebrivo-seller-dashboard.netlify.app/auth"
-            : "https://rebrivo-buyer-dashboard.netlify.app/auth";
-
+        // redirect to dashboard auth endpoint with query
         setTimeout(() => {
-          window.location.href = `${target}?auth=${authToken}`;
-        }, 2000);
+          window.location.href = `/auth?auth=${authToken}`;
+        }, 500);
       } else {
-        const errorMessage = data.message || "Invalid email or password. Please try again.";
+        const errorMessage = data.message || "Invalid credentials.";
         toast.error(errorMessage, { position: "top-right", autoClose: 3000 });
         setError(errorMessage);
       }
-    } catch (err) {
-      const genericError = "An error occurred during login. Please try again.";
+    } catch {
+      const genericError = "An error occurred. Please try again.";
       toast.error(genericError, { position: "top-right", autoClose: 3000 });
       setError(genericError);
-      console.error("Rebrivo Login - Error:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <section className="min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('/Interest.png')" }}>
-      <div className="flex min-h-screen items-center justify-center px-6 py-12 md:px-12 md:py-16">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg relative">
-          <Link href="/" className="absolute top-4 left-4 flex items-center text-sm text-[#F26E52] hover:underline">
-            <Image src="/home.png" alt="Home" width={16} height={16} className="mr-1" />
-            Go to Home
-          </Link>
-          <div className="text-center mt-8">
-            <h2 className="mb-2 text-2xl font-semibold text-[#011631] md:text-3xl">
-              Welcome Back, {role === "buyer" ? "Buyer" : "Seller"}!
-            </h2>
-            <p className="mb-6 text-xs text-[#414141] md:text-sm">Log in to your personal dashboard.</p>
+    <section className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow">
+        <h2 className="text-2xl font-bold text-center mb-6">Seller Sign In</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* email & password fields, error, submit button */}
-            {/* same as before */}
-          </form>
-        </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <div className="relative mt-1">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <Image
+                  src={showPassword ? "/EyeSlash.png" : "/eye.png"}
+                  alt={showPassword ? "Hide password" : "Show password"}
+                  width={20}
+                  height={20}
+                />
+              </button>
+            </div>
+          </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button
+            type="submit"
+            disabled={!isFormValid || isSubmitting}
+            className="w-full flex justify-center items-center px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+          >
+            {isSubmitting ? <Loader /> : "Sign In"}
+          </button>
+          <p className="text-center text-sm">
+            Forgot your password?{' '}
+            <Link href="/auth/forgot-password" className="text-indigo-600 hover:underline">
+              Reset here
+            </Link>
+          </p>
+        </form>
       </div>
     </section>
   );
 }
 
-export default function Signin() {
-  return (
-    <Suspense fallback={<div>Loading login form...</div>}>
-      <SigninContent />
-    </Suspense>
-  );
-}
 
 
 // "use client";

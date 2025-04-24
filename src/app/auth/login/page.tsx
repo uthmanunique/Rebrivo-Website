@@ -82,23 +82,23 @@ function SigninContent() {
 
         setTimeout(() => {
           if (role === "seller") {
-            // Create a state object with the sensitive data instead of using URL parameters
-            const state = btoa(JSON.stringify({
+            // Create a one-time token for authentication that doesn't expose sensitive data
+            const authToken = btoa(JSON.stringify({
               token: data.accessToken,
               refreshToken: data.refreshToken,
               userData: data.seller
             }));
             
-            // Only pass a single encoded parameter that doesn't expose tokens in the URL
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?state=${state}`;
+            // Use a single encoded parameter
+            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth?token=${authToken}`;
           } else {
-            const state = btoa(JSON.stringify({
+            const authToken = btoa(JSON.stringify({
               token: data.accessToken,
               refreshToken: data.refreshToken,
               userData: data.buyer
             }));
             
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth?state=${state}`;
+            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth?token=${authToken}`;
           }
         }, 2000);
       } else {

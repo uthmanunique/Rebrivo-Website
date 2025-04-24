@@ -81,28 +81,24 @@ function SigninContent() {
         }
 
         setTimeout(() => {
-          if (role === "seller") {
-            const authToken = JSON.stringify({
-              token: data.accessToken,
-              refreshToken: data.refreshToken,
-              userData: data.seller
-            });
+          const authToken = JSON.stringify({
+            token: data.accessToken,
+            refreshToken: data.refreshToken,
+            userData: role === "seller" ? data.seller : data.buyer
+          });
         
-            sessionStorage.setItem("authData", authToken); // Store auth data temporarily
+          console.log("Storing authData in sessionStorage:", authToken); // Debugging log
         
-            window.location.href = `https://rebrivo-seller-dashboard.netlify.app/auth`; // Redirect without exposing the token
-          } else {
-            const authToken = JSON.stringify({
-              token: data.accessToken,
-              refreshToken: data.refreshToken,
-              userData: data.buyer
-            });
+          sessionStorage.setItem("authData", authToken); // Store auth data temporarily
         
-            sessionStorage.setItem("authData", authToken);
+          window.location.href = role === "seller"
+            ? "https://rebrivo-seller-dashboard.netlify.app/auth"
+            : "https://rebrivo-buyer-dashboard.netlify.app/auth";
         
-            window.location.href = `https://rebrivo-buyer-dashboard.netlify.app/auth`;
-          }
+          console.log("Redirecting to auth page..."); // Debugging log
+        
         }, 2000);
+        
         
       } else {
         const errorMessage = data.message || "Invalid email or password. Please try again.";

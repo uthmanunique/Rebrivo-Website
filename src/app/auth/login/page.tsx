@@ -23,97 +23,95 @@ function SigninContent() {
     setIsFormValid(isValid);
   }, [email, password]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsSubmitting(true);
+  // ... existing imports and code ...
 
-    try {
-      const endpoint = role === "buyer" ? "buyer" : "seller";
-      const response = await fetch(`${API_BASE_URL}/auth/${endpoint}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  setError("");
+  setIsSubmitting(true);
+
+  try {
+    const endpoint = role === "buyer" ? "buyer" : "seller";
+    const response = await fetch(`${API_BASE_URL}/auth/${endpoint}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+    console.log("Login Response:", data); // Debug response
+
+    if (response.ok) {
+      toast.success("Login successful!", {
+        position: "top-right",
+        autoClose: 2000,
       });
 
-      const data = await response.json();
-      console.log("Login Response:", data); // Debug response
+      // Set cookies with required attributes
+      Cookies.set("accessToken", data.accessToken, {
+        expires: 1,
+        path: "/",
+        secure: true,
+        sameSite: "lax",
+      });
+      Cookies.set("refreshToken", data.refreshToken, {
+        expires: 7,
+        path: "/",
+        secure: true,
+        sameSite: "lax",
+      });
+      Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
+        expires: 1,
+        path: "/",
+        secure: true,
+        sameSite: "lax",
+      });
 
-      if (response.ok) {
-        toast.success("Login successful!", { position: "top-right", autoClose: 2000 });
-
-        // Set cookies
-        Cookies.set("accessToken", data.accessToken, {
-          expires: 1,
-          path: "/",
-          // secure: false, // Set to false in local
-          secure: true, // Set to true in production
-          sameSite: "lax",
-        });
-        Cookies.set("refreshToken", data.refreshToken, {
-          expires: 7,
-          path: "/",
-          // secure: false, // Set to false in local
-          secure: true, // Set to true in production
-          sameSite: "lax",
-        });
-        Cookies.set("role", role === "buyer" ? "BUYER" : "SELLER", {
+      if (role === "buyer") {
+        Cookies.set("buyerData", JSON.stringify(data.buyer), {
           expires: 1,
           path: "/",
           secure: true,
           sameSite: "lax",
         });
-
-        if (role === "buyer") {
-          Cookies.set("buyerData", JSON.stringify(data.buyer), {
-            expires: 1,
-            path: "/",
-            secure: true,
-            sameSite: "lax",
-          });
-        } else {
-          Cookies.set("sellerData", JSON.stringify(data.seller), {
-            expires: 1,
-            path: "/",
-            secure: true,
-            sameSite: "lax",
-          });
-        }
-
-        setTimeout(() => {
-          const authToken = JSON.stringify({
-            token: data.accessToken,
-            refreshToken: data.refreshToken,
-            userData: role === "seller" ? data.seller : data.buyer
-          });
-        
-          console.log("Storing authData in sessionStorage:", authToken); // Debugging log
-        
-          sessionStorage.setItem("authData", authToken); // Store auth data temporarily
-        
-          window.location.href = role === "seller"
-            ? "https://rebrivo-seller-dashboard.netlify.app/auth"
-            : "https://rebrivo-buyer-dashboard.netlify.app/auth";
-        
-          console.log("Redirecting to auth page..."); // Debugging log
-        
-        }, 2000);
-        
-        
       } else {
-        const errorMessage = data.message || "Invalid email or password. Please try again.";
-        toast.error(errorMessage, { position: "top-right", autoClose: 3000 });
-        setError(errorMessage);
+        Cookies.set("sellerData", JSON.stringify(data.seller), {
+          expires: 1,
+          path: "/",
+          secure: true,
+          sameSite: "lax",
+        });
       }
-    } catch (err) {
-      const genericError = "An error occurred during login. Please try again.";
-      toast.error(genericError, { position: "top-right", autoClose: 3000 });
-      setError(genericError);
-      console.error("Rebrivo Login - Error:", err);
-    } finally {
-      setIsSubmitting(false);
+
+      // Redirect directly to the dashboard after a delay
+      setTimeout(() => {
+        window.location.href =
+          role === "seller"
+            ? "https://rebrivo-seller-dashboard.netlify.app/dashboard"
+            : "https://rebrivo-buyer-dashboard.netlify.app/dashboard";
+        console.log("Redirecting to dashboard...");
+      }, 2000);
+    } else {
+      const errorMessage = data.message || "Invalid email or password. Please try again.";
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      setError(errorMessage);
     }
-  };
+  } catch (err) {
+    const genericError = "An error occurred during login. Please try again.";
+    toast.error(genericError, {
+      position: "top-right",
+      autoClose: 3000,
+    });
+    setError(genericError);
+    console.error("Rebrivo Login - Error:", err);
+  } finally {
+    setIsSubmitting(false);
+  }
+}
+
 
   return (
     <section className="min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('/Interest.png')" }}>
